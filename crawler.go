@@ -192,7 +192,7 @@ func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context
 	}
 	// We try to fetch a robots.txt rule to follow, being polite to the
 	// domain
-	crawlingRules := NewCrawlingRules(c.settings.PolitenessFixedDelay)
+	crawlingRules := NewCrawlingRules(rootURL, c.settings.PolitenessFixedDelay)
 	if crawlingRules.GetRobotsTxtGroup(c.settings.UserAgent, rootURL) {
 		log.Printf("Found a valid %s/robots.txt", rootURL.Host)
 	} else {
@@ -207,7 +207,7 @@ func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context
 		case links := <-linksCh:
 			for _, link := range links {
 				// Skip already visited links or disallowed ones by the robots.txt rules
-				if seen[link.String()] || !crawlingRules.Allowed(link.RequestURI()) {
+				if seen[link.String()] || !crawlingRules.Allowed(link) {
 					atomic.AddInt32(&linkCounter, -1)
 					continue
 				}

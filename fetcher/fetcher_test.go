@@ -55,9 +55,10 @@ func TestDefaultHttpFetcherFetchLinks(t *testing.T) {
 	defer server.Close()
 	f := New("test-agent", NewGoqueryParser(), 10*time.Second)
 	target := fmt.Sprintf("%s/foo/bar", server.URL)
-	firstLink, _ := url.Parse(server.URL + "/sample-page/")
-	secondLink, _ := url.Parse(server.URL + "/foo/bar")
-	expected := []*url.URL{firstLink, secondLink}
+	firstLink, _ := url.Parse("https://example.com/sample-page/")
+	secondLink, _ := url.Parse(server.URL + "/sample-page/")
+	thirdLink, _ := url.Parse(server.URL + "/foo/bar")
+	expected := []*url.URL{firstLink, secondLink, thirdLink}
 	_, res, err := f.FetchLinks(target)
 	if err != nil {
 		t.Errorf("DefaultHttpFetcher#FetchLinks failed: expected %v got %v", expected, err)

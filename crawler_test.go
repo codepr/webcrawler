@@ -59,7 +59,7 @@ func serverMockWithoutRobotsTxt() *httptest.Server {
 	handler := http.NewServeMux()
 	handler.HandleFunc("/foo", resourceMock(
 		`<head>
-			<link rel="canonical" href="https://example.com/sample-page/" />
+			<link rel="canonical" href="https://example-page.com/sample-page/" />
 		 </head>
 		 <body>
 			<img src="/baz.png">
@@ -69,7 +69,7 @@ func serverMockWithoutRobotsTxt() *httptest.Server {
 	))
 	handler.HandleFunc("/foo/bar/baz", resourceMock(
 		`<head>
-			<link rel="canonical" href="https://example.com/sample-page/" />
+			<link rel="canonical" href="https://example-page.com/sample-page/" />
 			<link rel="canonical" href="/foo/bar/test" />
 		 </head>
 		 <body>
@@ -79,7 +79,7 @@ func serverMockWithoutRobotsTxt() *httptest.Server {
 	))
 	handler.HandleFunc("/foo/bar/test", resourceMock(
 		`<head>
-			<link rel="canonical" href="https://example.com/sample-page/" />
+			<link rel="canonical" href="https://example-page.com/sample-page/" />
 		 </head>
 		 <body>
 			<img src="/stonk">
@@ -99,7 +99,7 @@ func serverMockWithRobotsTxt() *httptest.Server {
 	))
 	handler.HandleFunc("/", resourceMock(
 		`<head>
-			<link rel="canonical" href="https://example.com/sample-page/" />
+			<link rel="canonical" href="https://example-page.com/sample-page/" />
 		 </head>
 		 <body>
 			<img src="/baz.png">
@@ -109,7 +109,7 @@ func serverMockWithRobotsTxt() *httptest.Server {
 	))
 	handler.HandleFunc("/foo/bar/baz", resourceMock(
 		`<head>
-			<link rel="canonical" href="https://example.com/sample-page/" />
+			<link rel="canonical" href="https://example-page.com/sample-page/" />
 			<link rel="canonical" href="/foo/bar/test" />
 		 </head>
 		 <body>
@@ -119,7 +119,7 @@ func serverMockWithRobotsTxt() *httptest.Server {
 	))
 	handler.HandleFunc("/foo/bar/test", resourceMock(
 		`<head>
-			<link rel="canonical" href="https://example.com/sample-page/" />
+			<link rel="canonical" href="https://example-page.com/sample-page/" />
 		 </head>
 		 <body>
 			<img src="/stonk">
@@ -170,7 +170,7 @@ func TestCrawlPages(t *testing.T) {
 	expected := []ParsedResult{
 		{
 			server.URL + "/foo",
-			[]string{server.URL + "/foo/bar/baz"},
+			[]string{"https://example-page.com/sample-page/", server.URL + "/foo/bar/baz"},
 		},
 		{
 			server.URL + "/foo/bar/baz",
@@ -195,7 +195,7 @@ func TestCrawlPagesRespectingRobotsTxt(t *testing.T) {
 	expected := []ParsedResult{
 		{
 			server.URL,
-			[]string{server.URL + "/foo/bar/baz"},
+			[]string{"https://example-page.com/sample-page/", server.URL + "/foo/bar/baz"},
 		},
 		{
 			server.URL + "/foo/bar/baz",
@@ -220,7 +220,7 @@ func TestCrawlPagesRespectingMaxDepth(t *testing.T) {
 	expected := []ParsedResult{
 		{
 			server.URL + "/foo",
-			[]string{server.URL + "/foo/bar/baz"},
+			[]string{"https://example-page.com/sample-page/", server.URL + "/foo/bar/baz"},
 		},
 		{
 			server.URL + "/foo/bar/baz",

@@ -28,6 +28,8 @@ const robotsTxtPath string = "/robots.txt"
 // major between a random value between 1.5 * fixedDelay and 0.5 * fixedDelay
 // and the lastDelay will be chosen.
 type CrawlingRules struct {
+	// baseDomain represents the domain where we start the crawling process
+	baseDomain *url.URL
 	// temoto/robotstxt backend is used to fetch the robotsGroup from the
 	// robots.txt file
 	robotsGroup *robotstxt.Group
@@ -42,8 +44,9 @@ type CrawlingRules struct {
 }
 
 // NewCrawlingRules creates a new CrawlingRules struct
-func NewCrawlingRules(fixedDelay time.Duration) *CrawlingRules {
+func NewCrawlingRules(baseDomain *url.URL, fixedDelay time.Duration) *CrawlingRules {
 	return &CrawlingRules{
+		baseDomain: baseDomain,
 		fixedDelay: fixedDelay,
 	}
 }
@@ -51,11 +54,11 @@ func NewCrawlingRules(fixedDelay time.Duration) *CrawlingRules {
 // Allowed tests for eligibility of an URL to be crawled, based on the rules
 // of the robots.txt file on the server. If no valid robots.txt is found all
 // URLs in the domain are assumed to be allowed, returning true.
-func (r *CrawlingRules) Allowed(url string) bool {
+func (r *CrawlingRules) Allowed(url *url.URL) bool {
 	if r.robotsGroup != nil {
-		return r.robotsGroup.Test(url)
+		return r.robotsGroup.Test(url.RequestURI()) && subdomain(r.baseDomain, url)
 	}
-	return true
+	return subdomain(r.baseDomain, url)
 }
 
 // CrawlDelay return the delay to be respected for the next request on a same
@@ -127,4 +130,8 @@ func randDelay(value int64) time.Duration {
 	}
 	max, min := 1.5*float64(value), 0.5*float64(value)
 	return time.Duration(rand.Int63n(int64(max-min)) + int64(max))
+}
+
+func subdomain(domain *url.URL, link *url.URL) bool {
+	return (link.Hostname() == domain.Hostname() || link.Hostname() == "")
 }

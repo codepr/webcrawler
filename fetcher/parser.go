@@ -72,7 +72,7 @@ func (p *GoqueryParser) extractLinks(doc *goquery.Document, baseURL string) []*u
 	}).Each(func(i int, element *goquery.Selection) {
 		res, _ := element.Attr("href")
 		if link, ok := resolveRelativeURL(baseURL, res); ok {
-			if present, _ := p.seen.LoadOrStore(link.String(), false); !present.(bool) && subdomain(baseURL, link) {
+			if present, _ := p.seen.LoadOrStore(link.String(), false); !present.(bool) {
 				foundURLs = append(foundURLs, link)
 				p.seen.Store(link.String(), true)
 			}
@@ -90,15 +90,13 @@ func resolveRelativeURL(baseURL string, relative string) (*url.URL, bool) {
 	if err != nil {
 		return nil, false
 	}
+	if u.Hostname() != "" {
+		return u, true
+	}
 	base, err := url.Parse(baseURL)
 	if err != nil {
 		return nil, false
 	}
 
 	return base.ResolveReference(u), true
-}
-
-func subdomain(domain string, link *url.URL) bool {
-	parsedDomain, _ := url.Parse(domain)
-	return (link.Hostname() == parsedDomain.Hostname() || link.Hostname() == "")
 }

@@ -9,12 +9,13 @@ import (
 
 func TestGoqueryParsePage(t *testing.T) {
 	parser := NewGoqueryParser()
-	firstLink, _ := url.Parse("http://localhost:8787/sample-page/")
-	secondLink, _ := url.Parse("http://localhost:8787/foo/bar")
-	expected := []*url.URL{firstLink, secondLink}
+	firstLink, _ := url.Parse("https://example-page.com/sample-page/")
+	secondLink, _ := url.Parse("http://localhost:8787/sample-page/")
+	thirdLink, _ := url.Parse("http://localhost:8787/foo/bar")
+	expected := []*url.URL{firstLink, secondLink, thirdLink}
 	content := bytes.NewBufferString(
 		`<head>
-			<link rel="canonical" href="https://example.com/sample-page/" />
+			<link rel="canonical" href="https://example-page.com/sample-page/" />
 			<link rel="canonical" href="http://localhost:8787/sample-page/" />
 		 </head>
 		 <body>

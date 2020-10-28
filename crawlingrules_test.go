@@ -3,7 +3,6 @@
 package crawler
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -38,12 +37,13 @@ func TestCrawlingRules(t *testing.T) {
 	server := serverMock()
 	defer server.Close()
 	serverURL, _ := url.Parse(server.URL)
-	r := NewCrawlingRules(100 * time.Millisecond)
-	if !r.Allowed("/foo/baz/bar") {
+	r := NewCrawlingRules(serverURL, 100*time.Millisecond)
+	testLink, _ := url.Parse(server.URL + "/foo/baz/bar")
+	if !r.Allowed(testLink) {
 		t.Errorf("CrawlingRules#IsAllowed failed: expected true got false")
 	}
 	r.GetRobotsTxtGroup("test-agent", serverURL)
-	if r.Allowed("/foo/baz/bar") {
+	if r.Allowed(testLink) {
 		t.Errorf("CrawlingRules#IsAllowed failed: expected false got true")
 	}
 	if r.CrawlDelay() != 2*time.Second {
@@ -55,9 +55,8 @@ func TestCrawlingRulesNotFound(t *testing.T) {
 	server := serverWithoutCrawlingRules()
 	defer server.Close()
 	serverURL, _ := url.Parse(server.URL)
-	r := NewCrawlingRules(100 * time.Millisecond)
+	r := NewCrawlingRules(serverURL, 100*time.Millisecond)
 	if r.GetRobotsTxtGroup("test-agent", serverURL) {
-		fmt.Println(r.robotsGroup != nil)
 		t.Errorf("CrawlingRules#GetRobotsTxtGroup failed")
 	}
 }
