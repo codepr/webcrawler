@@ -99,6 +99,7 @@ plug different components:
 - Deduplication could be better, no `rel=canonical` handling, doesn't check
   for `http` vs `https` version of the site when they display the same contents
 - `Retry-After` header is not respected after a 503 response
+- 429 response as well is not considered
 - It's simple, no session handling/cookies
 - Logging is pretty simple, no external libraries, just print errors
 - Doesn't implement a sanitization of input except for missing scheme,
