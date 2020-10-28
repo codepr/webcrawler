@@ -176,20 +176,14 @@ func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context
 
 	if c.settings.Concurrency > 0 {
 		semaphore = make(chan struct{}, c.settings.Concurrency)
+		linksCh = make(chan []*url.URL, c.settings.Concurrency)
 	} else {
 		semaphore = make(chan struct{}, 1)
+		linksCh = make(chan []*url.URL, 1)
 	}
 
 	// Just a kickstart for the first URL to scrape
-	if c.settings.MaxDepth > 0 {
-		linksCh = make(chan []*url.URL, c.settings.MaxDepth)
-		linksCh <- []*url.URL{rootURL}
-	} else {
-		linksCh = make(chan []*url.URL)
-		go func() {
-			linksCh <- []*url.URL{rootURL}
-		}()
-	}
+	linksCh <- []*url.URL{rootURL}
 	// We try to fetch a robots.txt rule to follow, being polite to the
 	// domain
 	crawlingRules := NewCrawlingRules(rootURL, c.settings.PolitenessFixedDelay)
@@ -219,15 +213,12 @@ func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context
 				go func(link *url.URL, stopSentinel bool, w *sync.WaitGroup) {
 					defer w.Done()
 					defer atomic.AddInt32(&linkCounter, -1)
-					// 0 concurrency level means unbounded, not recommended for politeness
-					// reasons and potentially the number of concurrent open FDs
-					if c.settings.Concurrency > 0 {
-						semaphore <- struct{}{}
-						defer func() {
-							time.Sleep(crawlingRules.CrawlDelay())
-							<-semaphore
-						}()
-					}
+					// 0 concurrency level means we serialize calls
+					semaphore <- struct{}{}
+					defer func() {
+						time.Sleep(crawlingRules.CrawlDelay())
+						<-semaphore
+					}()
 					// We fetch the current link here and parse HTML for children links
 					responseTime, foundLinks, err := fetchClient.FetchLinks(link.String())
 					crawlingRules.UpdateLastDelay(responseTime)
@@ -237,20 +228,15 @@ func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context
 					}
 					// No errors occured, we want to enqueue all scraped links
 					// to the link queue
-					if !stopSentinel && foundLinks != nil && len(foundLinks) != 0 {
-						atomic.AddInt32(&linkCounter, int32(len(foundLinks)))
-						// Send results from fetch process to the processing queue
-						foundLinksStr := []string{}
-						for _, l := range foundLinks {
-							foundLinksStr = append(foundLinksStr, l.String())
-						}
-						payload, _ := json.Marshal(ParsedResult{link.String(), foundLinksStr})
-						if err := c.queue.Produce(payload); err != nil {
-							c.logger.Println("Unable to communicate with message queue:", err)
-						}
-						// Enqueue found links for the next cycle
-						linksCh <- foundLinks
+					if stopSentinel || foundLinks == nil || len(foundLinks) == 0 {
+						return
 					}
+					atomic.AddInt32(&linkCounter, int32(len(foundLinks)))
+					// Send results from fetch process to the processing queue
+					c.enqueueResults(link, foundLinks)
+					// Enqueue found links for the next cycle
+					linksCh <- foundLinks
+
 				}(link, stop, &fetchWg)
 				// We want to check if a level limit is set and in case, check if
 				// it's reached as every explored link count as a level
@@ -270,6 +256,19 @@ func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context
 		}
 	}
 	fetchWg.Wait()
+}
+
+// enqueueResults enqueue fetched links through the ProducerConsumer queue in
+// order to be processed (in this case, printe to stdout)
+func (c *WebCrawler) enqueueResults(link *url.URL, foundLinks []*url.URL) {
+	foundLinksStr := []string{}
+	for _, l := range foundLinks {
+		foundLinksStr = append(foundLinksStr, l.String())
+	}
+	payload, _ := json.Marshal(ParsedResult{link.String(), foundLinksStr})
+	if err := c.queue.Produce(payload); err != nil {
+		c.logger.Println("Unable to communicate with message queue:", err)
+	}
 }
 
 // Crawl will walk through a list of URLs spawning a goroutine for each one of
