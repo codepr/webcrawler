@@ -12,13 +12,17 @@ import (
 	"github.com/PuerkitoBio/rehttp"
 )
 
-// Fetcher is an interface exposing methods to fetch resources, Fetch enable
-// download and parsing of resources based on the `Parser` instance passed in,
-// Download allow to just download raw contents.
+// Fetcher is an interface exposing a method to fetch resources, Fetch enable
+// raw contents download.
 type Fetcher interface {
 	// Fetch makes an HTTP GET request to an URL returning a `*http.Response` or
 	// any error occured
 	Fetch(string) (time.Duration, *http.Response, error)
+}
+
+// LLinkFetcher is an interface exposing a methdo to download raw contents and
+// parse them extracting all outgoing links.
+type LinkFetcher interface {
 	// FetchLinks makes an HTTP GET request to an URL, parse the HTML in the
 	// response and returns an array of URLs or any error occured
 	FetchLinks(string) (time.Duration, []*url.URL, error)
@@ -36,7 +40,7 @@ type stdHttpFetcher struct {
 // 0 concurrency means an unbounded Fetcher. By default it retries when
 // a temporary error occurs (most temporary errors are HTTP ones) for a
 // specified number of times by applying an exponential backoff strategy.
-func New(userAgent string, parser Parser, timeout time.Duration) Fetcher {
+func New(userAgent string, parser Parser, timeout time.Duration) *stdHttpFetcher {
 	transport := rehttp.NewTransport(
 		&http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -45,7 +49,7 @@ func New(userAgent string, parser Parser, timeout time.Duration) Fetcher {
 		rehttp.ExpJitterDelay(1, 10*time.Second),
 	)
 	client := &http.Client{Timeout: timeout, Transport: transport}
-	return stdHttpFetcher{userAgent, parser, client}
+	return &stdHttpFetcher{userAgent, parser, client}
 }
 
 // Parse an URL extracting the protion <scheme>://<host>:<port>
