@@ -1,15 +1,14 @@
 Webcrawler
 ==========
 
-A simple webcrawler that starting from an initial URL visits all URLs it finds
-on the domain as long as they belong the subdomain.
+A simple PoC of a webcrawler that starting from an initial URL visits all URLs
+it finds on the domain as long as they belong the subdomain.
 
 **Features**
 
 - Concurrent
 - Deduplicate, tries not to crawl the same URLs more than once
 - Respect robots.txt directives
-
 - Tries to be polite, if no crawling delay is found on the robots.txt it
   generate a randomized delay based on the response time of the server and a
   fixed value passed in as configuration
@@ -109,9 +108,8 @@ plug different components:
 
 ### Improvements
 
-Given the freedom of the task, I sticked with the simplest solution, more akin
-to a PoC showing the core features, there's plenty of room for improvements for
-a production-ready solution, mostly dependents of the purpose of the software:
+There's plenty of room for improvements for a production-ready solution, mostly
+dependents of the purpose of the software:
 
 - REST interface to ingest jobs and query, probably behind a load-balancer
 - crawling logic with persistent state, persistent queue for links to crawl
@@ -120,6 +118,10 @@ a production-ready solution, mostly dependents of the purpose of the software:
   delay functions for each domain
 - better definition of errors and maybe a queue to notify them/gather them by
   stderr through some kind of aggregation stack (e.g. ELK)
+- reverse index generation and content signature generation, in order to avoid
+  crawling of different links pointing to the same (or mostly similar)
+  contents. Reverse index service should expose APIs to query results obtaining
+  a basic search engine.
 - **depending on the final purpose** separate even more the working logic from
   the business logic, probably adding a job-agnostic worker package
   implementing a shared nothing actor-model based on the goroutines which can
