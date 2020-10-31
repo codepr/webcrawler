@@ -174,10 +174,15 @@ func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context
 		linkCounter int32 = 1
 	)
 
+	// Set the concurrency level by using a buffered channel as semaphore
 	if c.settings.Concurrency > 0 {
 		semaphore = make(chan struct{}, c.settings.Concurrency)
 		linksCh = make(chan []*url.URL, c.settings.Concurrency)
 	} else {
+		// we want to disallow the unlimited concurrency, to avoid being banned from
+		// the ccurrent crawled domain and also to avoid running OOM or running out
+		// of unix file descriptors, as each HTTP call is built upon a  socket
+		// connection, which is in-fact an opened descriptor.
 		semaphore = make(chan struct{}, 1)
 		linksCh = make(chan []*url.URL, 1)
 	}
@@ -206,14 +211,18 @@ func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context
 					continue
 				}
 				seen[link.String()] = true
-				// Spawn a goroutine to fetch the link, concurrency argument on
-				// the semaphore will take care of the concurrent number of
-				// goroutine throttling
+				// Spawn a goroutine to fetch the link, throttling by
+				// concurrency argument on the semaphore will take care of the
+				// concurrent number of goroutine.
 				fetchWg.Add(1)
 				go func(link *url.URL, stopSentinel bool, w *sync.WaitGroup) {
 					defer w.Done()
 					defer atomic.AddInt32(&linkCounter, -1)
-					// 0 concurrency level means we serialize calls
+					// 0 concurrency level means we serialize calls as
+					// goroutines are cheap but not that cheap (around 2-5 kb
+					// each, 1 million links = ~4/5 GB ram), by allowing for
+					// unlimited number of workers, potentially we could run
+					// OOM (or banned from the website) really fast
 					semaphore <- struct{}{}
 					defer func() {
 						time.Sleep(crawlingRules.CrawlDelay())
