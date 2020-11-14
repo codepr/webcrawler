@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"monzo/webcrawler/fetcher"
+	"github.com/codepr/webcrawler/fetcher"
 
 	"github.com/temoto/robotstxt"
 )

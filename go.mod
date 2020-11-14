@@ -1,4 +1,4 @@
-module monzo/webcrawler
+module github.com/codepr/webcrawler
 
 go 1.14
 

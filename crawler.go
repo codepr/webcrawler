@@ -14,9 +14,9 @@ import (
 	"syscall"
 	"time"
 
-	"monzo/webcrawler/env"
-	"monzo/webcrawler/fetcher"
-	"monzo/webcrawler/messaging"
+	"github.com/codepr/webcrawler/env"
+	"github.com/codepr/webcrawler/fetcher"
+	"github.com/codepr/webcrawler/messaging"
 )
 
 const (
