@@ -32,25 +32,25 @@ func resourceMock(w http.ResponseWriter, r *http.Request) {
 	))
 }
 
-func TestDefaultHttpFetcherFetch(t *testing.T) {
+func TestStdHttpFetcherFetch(t *testing.T) {
 	server := serverMock()
 	defer server.Close()
 	f := New("test-agent", nil, 10*time.Second)
 	target := fmt.Sprintf("%s/foo/bar", server.URL)
 	_, res, err := f.Fetch(target)
 	if err != nil {
-		t.Errorf("DefaultHttpFetcher#Fetch failed: %v", err)
+		t.Errorf("StdHttpFetcher#Fetch failed: %v", err)
 	}
 	if res.StatusCode != 200 {
-		t.Errorf("DefaultHttpFetcher#Fetch failed: %#v", res)
+		t.Errorf("StdHttpFetcher#Fetch failed: %#v", res)
 	}
 	_, res, err = f.Fetch("testUrl")
 	if err == nil {
-		t.Errorf("DefaultHttpFetcher#Fetch failed: %v", err)
+		t.Errorf("StdHttpFetcher#Fetch failed: %v", err)
 	}
 }
 
-func TestDefaultHttpFetcherFetchLinks(t *testing.T) {
+func TestStdHttpFetcherFetchLinks(t *testing.T) {
 	server := serverMock()
 	defer server.Close()
 	f := New("test-agent", NewGoqueryParser(), 10*time.Second)
@@ -61,9 +61,9 @@ func TestDefaultHttpFetcherFetchLinks(t *testing.T) {
 	expected := []*url.URL{firstLink, secondLink, thirdLink}
 	_, res, err := f.FetchLinks(target)
 	if err != nil {
-		t.Errorf("DefaultHttpFetcher#FetchLinks failed: expected %v got %v", expected, err)
+		t.Errorf("StdHttpFetcher#FetchLinks failed: expected %v got %v", expected, err)
 	}
 	if !reflect.DeepEqual(res, expected) {
-		t.Errorf("DefaultHttpFetcher#FetchLinks failed: expected %v got %v", expected, res)
+		t.Errorf("StdHttpFetcher#FetchLinks failed: expected %v got %v", expected, res)
 	}
 }
