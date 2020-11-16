@@ -161,11 +161,8 @@ func TestCrawlPages(t *testing.T) {
 	go func() { results <- consumeEvents(&testbus) }()
 	crawler := New("test-agent", &testbus, withCrawlingTimeout(100*time.Millisecond))
 	crawler.Crawl(server.URL + "/foo")
-	time.Sleep(1)
 	testbus.Close()
-	time.Sleep(1)
 	res := <-results
-	time.Sleep(1)
 	close(results)
 	expected := []ParsedResult{
 		{
