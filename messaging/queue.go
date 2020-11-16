@@ -22,7 +22,7 @@ type ProducerConsumer interface {
 	Consumer
 }
 
-// ProdProducerConsumerCloser defines the behavior of a simple mssage queue
+// ProducerConsumerCloser defines the behavior of a simple mssage queue
 // that requires some kidn of external connection to be managed
 type ProducerConsumerCloser interface {
 	ProducerConsumer

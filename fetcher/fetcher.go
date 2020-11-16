@@ -20,7 +20,7 @@ type Fetcher interface {
 	Fetch(string) (time.Duration, *http.Response, error)
 }
 
-// LLinkFetcher is an interface exposing a methdo to download raw contents and
+// LinkFetcher is an interface exposing a methdo to download raw contents and
 // parse them extracting all outgoing links.
 type LinkFetcher interface {
 	// FetchLinks makes an HTTP GET request to an URL, parse the HTML in the
