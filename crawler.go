@@ -193,7 +193,7 @@ func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context
 	// domain
 	crawlingRules := NewCrawlingRules(rootURL, c.settings.PolitenessFixedDelay)
 	if crawlingRules.GetRobotsTxtGroup(c.settings.UserAgent, rootURL) {
-		log.Printf("Found a valid %s/robots.txt", rootURL.Host)
+		c.logger.Printf("Found a valid %s/robots.txt", rootURL.Host)
 	} else {
 		c.logger.Printf("No valid %s/robots.txt found", rootURL.Host)
 	}
@@ -290,7 +290,7 @@ func (c *WebCrawler) Crawl(URLs ...string) {
 	for _, href := range URLs {
 		url, err := url.Parse(href)
 		if err != nil {
-			log.Fatal(err)
+			c.logger.Fatal(err)
 		}
 		if url.Scheme == "" {
 			url.Scheme = "https"
