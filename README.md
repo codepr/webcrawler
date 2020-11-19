@@ -3,6 +3,8 @@ Webcrawler
 
 A simple PoC of a webcrawler that starting from an initial URL visits all URLs
 it finds on the domain as long as they belong the subdomain.
+A detailed tutorial on the realization can be found at
+[webcrawler-from-scratch](https://codepr.github.io/webcrawler-from-scratch)
 
 **Features**
 
