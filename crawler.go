@@ -57,6 +57,8 @@ type CrawlerSettings struct {
 	Concurrency int
 	// Parser is a `fetcher.Parser` instance object used to parse fetched pages
 	Parser fetcher.Parser
+	// Cachable to be used as visit tracker for each domain crawled
+	Cache Cachable
 	// MaxDepth represents a limit on the number of pages recursively fetched.
 	// 0 means unlimited
 	MaxDepth int
@@ -82,7 +84,7 @@ type WebCrawler struct {
 	// queue is a simple message queue to forward crawling results to other
 	// components of the architecture, decoupling business logic from processing,
 	// storage or presentation layers
-	queue messaging.ProducerConsumer
+	queue messaging.Producer
 	// settings is a pointer to `CrawlerSettings` containing some crawler
 	// specifications
 	settings *CrawlerSettings
@@ -93,11 +95,12 @@ type WebCrawler struct {
 // defines how many goroutine to run in parallel while fetching links and a
 // timeout for each HTTP call.
 func New(userAgent string,
-	queue messaging.ProducerConsumer, opts ...CrawlerOpt) *WebCrawler {
+	queue messaging.Producer, opts ...CrawlerOpt) *WebCrawler {
 	// Default crawler settings
 	settings := &CrawlerSettings{
 		FetchingTimeout:      defaultFetchTimeout,
 		Parser:               fetcher.NewGoqueryParser(),
+		Cache:                newMemoryCache(),
 		UserAgent:            userAgent,
 		CrawlingTimeout:      defaultCrawlingTimeout,
 		PolitenessFixedDelay: defaultPolitenessDelay,
@@ -119,7 +122,7 @@ func New(userAgent string,
 }
 
 // NewFromEnv create a new webCrawler by reading values from environment
-func NewFromEnv(queue messaging.ProducerConsumer, opts ...CrawlerOpt) *WebCrawler {
+func NewFromEnv(queue messaging.Producer, opts ...CrawlerOpt) *WebCrawler {
 	crawler := New(env.GetEnv("USERAGENT", defaultUserAgent), queue,
 		func(s *CrawlerSettings) {
 			s.MaxDepth = env.GetEnvAsInt("MAX_DEPTH", defaultDepth)
@@ -165,12 +168,10 @@ func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context
 		linksCh chan []*url.URL
 		stop    bool
 		depth   int
-		// A map is used to track all visited links, in order to avoid multiple
-		// fetches on the previous visited links
-		seen    map[string]bool = make(map[string]bool)
-		fetchWg sync.WaitGroup  = sync.WaitGroup{}
+		fetchWg sync.WaitGroup = sync.WaitGroup{}
 		// An atomic counter to make sure that we've already crawled all remaining
-		// links if a timeout occur
+		// links if a timeout occur. Initialized at 1 as it's counting the start URL
+		// before crawling all subdomains.
 		linkCounter int32 = 1
 	)
 
@@ -191,7 +192,8 @@ func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context
 	linksCh <- []*url.URL{rootURL}
 	// We try to fetch a robots.txt rule to follow, being polite to the
 	// domain
-	crawlingRules := NewCrawlingRules(rootURL, c.settings.PolitenessFixedDelay)
+	crawlingRules := NewCrawlingRules(rootURL,
+		c.settings.Cache, c.settings.PolitenessFixedDelay)
 	if crawlingRules.GetRobotsTxtGroup(c.settings.UserAgent, rootURL) {
 		c.logger.Printf("Found a valid %s/robots.txt", rootURL.Host)
 	} else {
@@ -206,11 +208,10 @@ func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context
 		case links := <-linksCh:
 			for _, link := range links {
 				// Skip already visited links or disallowed ones by the robots.txt rules
-				if seen[link.String()] || !crawlingRules.Allowed(link) {
+				if !crawlingRules.Allowed(link) {
 					atomic.AddInt32(&linkCounter, -1)
 					continue
 				}
-				seen[link.String()] = true
 				// Spawn a goroutine to fetch the link, throttling by
 				// concurrency argument on the semaphore will take care of the
 				// concurrent number of goroutine.
@@ -267,8 +268,8 @@ func (c *WebCrawler) crawlPage(rootURL *url.URL, wg *sync.WaitGroup, ctx context
 	fetchWg.Wait()
 }
 
-// enqueueResults enqueue fetched links through the ProducerConsumer queue in
-// order to be processed (in this case, printe to stdout)
+// enqueueResults enqueue fetched links through the Producer queue in order to
+// be processed (in this case, printe to stdout)
 func (c *WebCrawler) enqueueResults(link *url.URL, foundLinks []*url.URL) {
 	foundLinksStr := []string{}
 	for _, l := range foundLinks {
@@ -299,7 +300,6 @@ func (c *WebCrawler) Crawl(URLs ...string) {
 		// for completion
 		wg.Add(1)
 		go c.crawlPage(url, &wg, ctx)
-
 	}
 	// Graceful shutdown of workers
 	signalCh := make(chan os.Signal, 1)

@@ -37,7 +37,7 @@ func TestCrawlingRules(t *testing.T) {
 	server := serverMock()
 	defer server.Close()
 	serverURL, _ := url.Parse(server.URL)
-	r := NewCrawlingRules(serverURL, 100*time.Millisecond)
+	r := NewCrawlingRules(serverURL, newMemoryCache(), 100*time.Millisecond)
 	testLink, _ := url.Parse(server.URL + "/foo/baz/bar")
 	if !r.Allowed(testLink) {
 		t.Errorf("CrawlingRules#IsAllowed failed: expected true got false")
@@ -55,7 +55,7 @@ func TestCrawlingRulesNotFound(t *testing.T) {
 	server := serverWithoutCrawlingRules()
 	defer server.Close()
 	serverURL, _ := url.Parse(server.URL)
-	r := NewCrawlingRules(serverURL, 100*time.Millisecond)
+	r := NewCrawlingRules(serverURL, newMemoryCache(), 100*time.Millisecond)
 	if r.GetRobotsTxtGroup("test-agent", serverURL) {
 		t.Errorf("CrawlingRules#GetRobotsTxtGroup failed")
 	}

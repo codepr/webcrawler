@@ -15,6 +15,15 @@ import (
 	"github.com/temoto/robotstxt"
 )
 
+// Cachable defines the behavior expected by a simple cache, for now just to
+// track already visited links.
+// We won't use interface{} as types as we're reasonably sure that we'd use
+// the implementations just to track URL in string form
+type Cachable interface {
+	Set(string, string)
+	Contains(string, string) bool
+}
+
 // Default /robots.txt path on server
 const robotsTxtPath string = "/robots.txt"
 
@@ -30,6 +39,8 @@ const robotsTxtPath string = "/robots.txt"
 type CrawlingRules struct {
 	// baseDomain represents the domain where we start the crawling process
 	baseDomain *url.URL
+	// Cachable store, just to keep track of visited URLs
+	cache Cachable
 	// temoto/robotstxt backend is used to fetch the robotsGroup from the
 	// robots.txt file
 	robotsGroup *robotstxt.Group
@@ -44,9 +55,11 @@ type CrawlingRules struct {
 }
 
 // NewCrawlingRules creates a new CrawlingRules struct
-func NewCrawlingRules(baseDomain *url.URL, fixedDelay time.Duration) *CrawlingRules {
+func NewCrawlingRules(baseDomain *url.URL, cache Cachable,
+	fixedDelay time.Duration) *CrawlingRules {
 	return &CrawlingRules{
 		baseDomain: baseDomain,
+		cache:      cache,
 		fixedDelay: fixedDelay,
 	}
 }
@@ -55,6 +68,10 @@ func NewCrawlingRules(baseDomain *url.URL, fixedDelay time.Duration) *CrawlingRu
 // of the robots.txt file on the server. If no valid robots.txt is found all
 // URLs in the domain are assumed to be allowed, returning true.
 func (r *CrawlingRules) Allowed(url *url.URL) bool {
+	if r.cache.Contains(r.baseDomain.String(), url.String()) {
+		return false
+	}
+	defer r.cache.Set(r.baseDomain.String(), url.String())
 	if r.robotsGroup != nil {
 		return r.robotsGroup.Test(url.RequestURI()) && subdomain(r.baseDomain, url)
 	}
