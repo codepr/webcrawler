@@ -95,10 +95,10 @@ func (f stdHttpFetcher) FetchLinks(targetURL string) (time.Duration, []*url.URL,
 	if err != nil {
 		return elapsed, nil, fmt.Errorf("fetching links from %s failed: %w", targetURL, err)
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode >= http.StatusBadRequest {
 		return elapsed, nil, fmt.Errorf("fetching links from %s failed: %s", targetURL, resp.Status)
 	}
-	defer resp.Body.Close()
 
 	links, err := f.parser.Parse(baseDomain, resp.Body)
 	if err != nil {
