@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/codepr/webcrawler/fetcher"
+	"github.com/codepr/webcrawler/crawler/fetcher"
 
 	"github.com/temoto/robotstxt"
 )
