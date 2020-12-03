@@ -5,6 +5,7 @@ package fetcher
 import (
 	"crypto/tls"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"time"
@@ -12,20 +13,10 @@ import (
 	"github.com/PuerkitoBio/rehttp"
 )
 
-// Fetcher is an interface exposing a method to fetch resources, Fetch enable
-// raw contents download.
-type Fetcher interface {
-	// Fetch makes an HTTP GET request to an URL returning a `*http.Response` or
-	// any error occured
-	Fetch(string) (time.Duration, *http.Response, error)
-}
-
-// LinkFetcher is an interface exposing a methdo to download raw contents and
-// parse them extracting all outgoing links.
-type LinkFetcher interface {
-	// FetchLinks makes an HTTP GET request to an URL, parse the HTML in the
-	// response and returns an array of URLs or any error occured
-	FetchLinks(string) (time.Duration, []*url.URL, error)
+// Parser is an interface exposing a single method `Parse`, to be used on
+// raw results of a fetch call
+type Parser interface {
+	Parse(string, io.Reader) ([]*url.URL, error)
 }
 
 // stdHttpFetcher is a simple Fetcher with std library http.Client as a

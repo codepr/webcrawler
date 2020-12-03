@@ -8,7 +8,13 @@ import (
 	"net/url"
 	"testing"
 	"time"
+
+	"github.com/codepr/webcrawler/crawler/fetcher"
 )
+
+const userAgent = "test-agent"
+
+var f = fetcher.New(userAgent, nil, 10*time.Second)
 
 func serverMock() *httptest.Server {
 	handler := http.NewServeMux()
@@ -42,7 +48,7 @@ func TestCrawlingRules(t *testing.T) {
 	if !r.Allowed(testLink) {
 		t.Errorf("CrawlingRules#IsAllowed failed: expected true got false")
 	}
-	r.GetRobotsTxtGroup("test-agent", serverURL)
+	r.GetRobotsTxtGroup(f, userAgent, serverURL)
 	if r.Allowed(testLink) {
 		t.Errorf("CrawlingRules#IsAllowed failed: expected false got true")
 	}
@@ -56,7 +62,7 @@ func TestCrawlingRulesNotFound(t *testing.T) {
 	defer server.Close()
 	serverURL, _ := url.Parse(server.URL)
 	r := NewCrawlingRules(serverURL, newMemoryCache(), 100*time.Millisecond)
-	if r.GetRobotsTxtGroup("test-agent", serverURL) {
+	if r.GetRobotsTxtGroup(f, userAgent, serverURL) {
 		t.Errorf("CrawlingRules#GetRobotsTxtGroup failed")
 	}
 }

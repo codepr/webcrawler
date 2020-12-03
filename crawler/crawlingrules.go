@@ -10,8 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/codepr/webcrawler/crawler/fetcher"
-
 	"github.com/temoto/robotstxt"
 )
 
@@ -119,8 +117,8 @@ func (r *CrawlingRules) UpdateLastDelay(lastResponseTime time.Duration) {
 
 // GetRobotsTxtGroup tryes to fetch the robots.txt from the domain and parse
 // it. Returns a boolean based on the success of the process.
-func (r *CrawlingRules) GetRobotsTxtGroup(userAgent string, domain *url.URL) bool {
-	f := fetcher.New(userAgent, nil, 10*time.Second)
+func (r *CrawlingRules) GetRobotsTxtGroup(f Fetcher,
+	userAgent string, domain *url.URL) bool {
 	u, _ := url.Parse(robotsTxtPath)
 	targetURL := domain.ResolveReference(u)
 	// Try to fetch the robots.txt file

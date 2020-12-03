@@ -11,12 +11,6 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-// Parser is an interface exposing a single method `Parse`, to be used on
-// raw results of a fetch call
-type Parser interface {
-	Parse(string, io.Reader) ([]*url.URL, error)
-}
-
 // GoqueryParser is just an algorithm `Parser` definition that uses
 // `github.com/PuerkitoBio/goquery` as a backend library
 type GoqueryParser struct {

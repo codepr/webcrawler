@@ -147,9 +147,9 @@ func withMaxDepth(depth int) CrawlerOpt {
 	}
 }
 
-func withCrawlingTimeout(timeout time.Duration) CrawlerOpt {
+func withCrawlTimeout(timeout time.Duration) CrawlerOpt {
 	return func(s *CrawlerSettings) {
-		s.CrawlingTimeout = timeout
+		s.CrawlTimeout = timeout
 	}
 }
 
@@ -159,7 +159,7 @@ func TestCrawlPages(t *testing.T) {
 	testbus := testQueue{make(chan []byte)}
 	results := make(chan []ParsedResult)
 	go func() { results <- consumeEvents(&testbus) }()
-	crawler := New("test-agent", &testbus, withCrawlingTimeout(100*time.Millisecond))
+	crawler := New("test-agent", &testbus, withCrawlTimeout(100*time.Millisecond))
 	crawler.Crawl(server.URL + "/foo")
 	testbus.Close()
 	res := <-results
@@ -185,7 +185,7 @@ func TestCrawlPagesRespectingRobotsTxt(t *testing.T) {
 	testbus := testQueue{make(chan []byte)}
 	results := make(chan []ParsedResult)
 	go func() { results <- consumeEvents(&testbus) }()
-	crawler := New("test-agent", &testbus, withCrawlingTimeout(100*time.Millisecond))
+	crawler := New("test-agent", &testbus, withCrawlTimeout(100*time.Millisecond))
 	crawler.Crawl(server.URL)
 	testbus.Close()
 	res := <-results
@@ -210,7 +210,7 @@ func TestCrawlPagesRespectingMaxDepth(t *testing.T) {
 	testbus := testQueue{make(chan []byte)}
 	results := make(chan []ParsedResult)
 	go func() { results <- consumeEvents(&testbus) }()
-	crawler := New("test-agent", &testbus, withCrawlingTimeout(100*time.Millisecond), withMaxDepth(3))
+	crawler := New("test-agent", &testbus, withCrawlTimeout(100*time.Millisecond), withMaxDepth(3))
 	crawler.Crawl(server.URL + "/foo")
 	testbus.Close()
 	res := <-results
